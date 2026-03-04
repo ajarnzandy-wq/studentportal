@@ -1,754 +1,1069 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Student Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Source Sans 3',Georgia,sans-serif;background:#f4f0f8;color:#1a1a2e;min-height:100vh}
-input,select,button{font-family:'Source Sans 3',Georgia,sans-serif}
-input::placeholder{color:#9aa5b4}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+import { useState, useEffect, useCallback } from "react";
 
-.nav{background:linear-gradient(135deg,#1a1a2e,#0f3460);border-bottom:2px solid #c9a84c;
-  padding:0 28px;display:flex;align-items:center;justify-content:space-between;
-  height:62px;box-shadow:0 4px 20px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
-.nav-brand{display:flex;align-items:center;gap:10px;color:#c9a84c;font-weight:700;font-size:17px}
+// ─────────────────────────────────────────────────────────
+// TEACHER PASSWORD  (change this to your own password)
+// ─────────────────────────────────────────────────────────
+const TEACHER_PASSWORD = "teacher1832";
 
-.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;
-  cursor:pointer;font-weight:600;transition:all .18s;padding:10px 20px;font-size:13px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn-pink{background:linear-gradient(135deg,#e91e8c,#c2185b);color:#fff;box-shadow:0 4px 14px rgba(233,30,140,.27)}
-.btn-pink:hover:not(:disabled){filter:brightness(1.1)}
-.btn-gold{background:linear-gradient(135deg,#c9a84c,#a07828);color:#fff;box-shadow:0 4px 14px rgba(201,168,76,.27)}
-.btn-gold:hover:not(:disabled){filter:brightness(1.1)}
-.btn-ghost{background:rgba(255,255,255,.08);color:#ccc;border:1px solid rgba(255,255,255,.15)}
-.btn-ghost:hover{background:rgba(233,30,140,.2)}
-.btn-outline{background:transparent;color:#e91e8c;border:1px solid #e91e8c}
-.btn-outline:hover{background:rgba(233,30,140,.08)}
-.btn-sm{padding:6px 14px;font-size:12px}
-.btn-lg{padding:13px 26px;font-size:15px;width:100%;justify-content:center}
-.btn-edit{padding:5px 10px;border-radius:6px;border:1px solid #2979ff;background:#e8f0fe;
-  color:#1a56b0;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
-.btn-del{padding:5px 10px;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;
-  color:#991b1b;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
-
-.field{margin-bottom:14px}
-.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#7a6ea0;margin-bottom:5px}
-.field label.gl{color:#c9a84c}
-.field .req{color:#e91e8c}
-.field input,.field select{width:100%;padding:10px 14px;border-radius:8px;font-size:14px;
-  background:#fff;color:#1a1a2e;border:1px solid #e2d9f3;outline:none;transition:border .2s}
-.field input:focus,.field select:focus{border-color:#e91e8c}
-.dark-in{background:rgba(255,255,255,.06)!important;color:#e8eaf6!important;border-color:rgba(255,255,255,.12)!important}
-.dark-in:focus{border-color:#c9a84c!important}
-.iw{position:relative}.iw svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:#5a6890}
-.iw input{padding-left:44px!important}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-.page{max-width:940px;margin:0 auto;padding:28px 20px}
-.card{background:#fff;border-radius:14px;border:1px solid #ede5f8;box-shadow:0 2px 12px rgba(0,0,0,.05);padding:20px 24px}
-.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
-.sc{background:#fff;border-radius:12px;padding:16px 18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.sv{font-size:26px;font-weight:700;line-height:1}.sl{font-size:11px;color:#888;margin-top:4px;letter-spacing:.05em}
-
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.bq{background:#e8f0fe;color:#1a56b0;border:1px solid #93b4f5}
-.be{background:#fce8f3;color:#9d174d;border:1px solid #f0a0cc}
-.ba{background:#fdf3e0;color:#92400e;border:1px solid #e9c06a}
-.dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:currentColor}
-
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;
-  display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.modal{background:#fff;border-radius:16px;padding:28px 32px;width:100%;max-width:480px;
-  max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:slideUp .25s ease}
-.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #c9a84c;padding-bottom:14px}
-.mhdr h3{font-size:17px;color:#1a1a2e;font-family:'Playfair Display',serif;margin:0}
-.mclose{background:none;border:none;font-size:24px;cursor:pointer;color:#aaa;line-height:1}
-.mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #f0e6fa}
-
-#toast{position:fixed;bottom:28px;right:28px;z-index:900;color:#fff;padding:12px 22px;
-  border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);
-  animation:slideUp .3s ease;display:none;align-items:center;gap:8px}
-
-.tabs{display:flex;gap:8px;margin-bottom:20px;background:rgba(255,255,255,.7);
-  border-radius:12px;padding:5px;border:1px solid #e2d9f3;width:fit-content}
-.tb{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;border:none;
-  cursor:pointer;font-size:13px;color:#7a6ea0;background:transparent;transition:all .18s}
-.tb.on{background:linear-gradient(135deg,#e91e8c,#c2185b);color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(233,30,140,.3)}
-
-.tbl{background:#fff;border-radius:14px;border:1px solid #ede5f8;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
-.th{padding:11px 20px;background:linear-gradient(135deg,#1a1a2e,#0f3460);border-bottom:2px solid #c9a84c;display:grid;gap:8px}
-.th span{color:#c9a84c;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
-.tr{padding:13px 20px;display:grid;gap:8px;align-items:center;transition:background .15s}
-.tr:hover{background:#f0e9fa!important}
-.tr:not(:last-child){border-bottom:1px solid #f3edfb}
-
-.srow{background:#fff;border-radius:12px;padding:14px 20px;border:1px solid #ede5f8;
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  box-shadow:0 2px 6px rgba(0,0,0,.04);margin-bottom:9px;transition:transform .15s}
-.srow:hover{transform:translateX(4px)}
-.mbar{width:100%;height:4px;background:#f0e6fa;border-radius:2px;overflow:hidden;margin-top:8px}
-
-.aerr{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;
-  border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
-.awarn{background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:11px 16px;color:#991b1b;font-size:13px;margin-bottom:16px}
-.empty{background:#fff;border-radius:14px;border:1px dashed #e2d9f3;padding:40px;text-align:center;color:#bbb;font-size:14px}
-
-.pw{max-width:9px;background:#f0e6fa;border-radius:5px;overflow:hidden;margin:8px 0;height:9px}
-.pf{height:100%;border-radius:5px;background:linear-gradient(90deg,#e91e8c,#2979ff)}
-
-/* HOME */
-#sh{display:flex;align-items:center;justify-content:center;
-  min-height:100vh;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-  padding:24px;position:relative;overflow:hidden}
-.blob{position:absolute;border-radius:50%;pointer-events:none}
-.hc{background:rgba(255,255,255,.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.10);
-  border-radius:16px;padding:40px 36px;width:100%;max-width:460px;
-  box-shadow:0 24px 64px rgba(0,0,0,.4);animation:slideUp .5s ease}
-.rg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
-.rc{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;
-  padding:26px 18px;text-align:center;cursor:pointer;transition:all .2s}
-.rc:hover{background:rgba(255,255,255,.1);transform:translateY(-3px)}
-.ri{font-size:30px;margin-bottom:8px}
-.rt{color:#fff;font-weight:700;font-size:14px;margin-bottom:3px}
-.rd{color:#8899bb;font-size:11px}
-.div{height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent);margin:18px 0}
-
-/* BANNER */
-.bnr{background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:14px;
-  padding:22px 26px;margin-bottom:24px;border:1px solid rgba(201,168,76,.3);
-  display:flex;flex-wrap:wrap;align-items:center;gap:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,.2);animation:slideUp .4s ease}
-.bav{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#e91e8c,#2979ff);
-  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;
-  color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(233,30,140,.4)}
-.sp{text-align:center;background:rgba(255,255,255,.06);border-radius:10px;
-  padding:10px 16px;min-width:80px;border:1px solid rgba(255,255,255,.08)}
-.spv{font-size:20px;font-weight:700;line-height:1}
-.spl{font-size:10px;color:#9ea8c0;margin-top:3px;letter-spacing:.06em}
-
-.screen{display:none;min-height:100vh}
-.screen.on{display:block}
-#sh.on{display:flex}
-
-/* ADMIN TABLE */
-.atg{grid-template-columns:2fr 1.2fr 1fr 1fr 1fr auto}
-.att3{grid-template-columns:1fr 1fr 1fr}
-.att4{grid-template-columns:1fr 1fr 1fr auto}
-
-@media(max-width:640px){
-  .atg{grid-template-columns:1fr 1fr}
-  .att4{grid-template-columns:1fr 1fr}
-  .nav{padding:0 14px}.page{padding:16px 12px}
-  .modal{padding:20px 16px}.bnr{padding:16px 18px}.hc{padding:28px 20px}
-}
-</style>
-</head>
-<body>
-
-<!-- HOME -->
-<div id="sh" class="on">
-  <div class="blob" style="top:-80px;left:-80px;width:340px;height:340px;background:radial-gradient(circle,rgba(233,30,140,.13) 0%,transparent 70%)"></div>
-  <div class="blob" style="bottom:-100px;right:-60px;width:400px;height:400px;background:radial-gradient(circle,rgba(41,121,255,.1) 0%,transparent 70%)"></div>
-  <div class="blob" style="top:40%;left:55%;width:220px;height:220px;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 70%)"></div>
-  <div class="hc">
-    <div style="text-align:center;margin-bottom:22px">
-      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e91e8c,#2979ff);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 24px rgba(233,30,140,.4)">🎓</div>
-      <h1 style="color:#fff;font-size:24px;font-weight:700;margin-bottom:5px;font-family:'Playfair Display',serif">Student Portal</h1>
-      <p style="color:#9ea8c0;font-size:13px">Select how you'd like to sign in</p>
-    </div>
-    <div class="div"></div>
-    <div id="rc">
-      <div class="rg">
-        <div class="rc" onclick="showSL()"><div class="ri">🎒</div><div class="rt">I'm a Student</div><div class="rd">View my scores &amp; attendance</div></div>
-        <div class="rc" onclick="showAL()"><div class="ri">📋</div><div class="rt">I'm a Teacher</div><div class="rd">Manage students &amp; records</div></div>
-      </div>
-    </div>
-    <!-- Student login -->
-    <div id="slf" style="display:none">
-      <button onclick="showRC()" style="background:none;border:none;color:#667;cursor:pointer;font-size:13px;margin-bottom:16px;padding:0">← Back</button>
-      <h2 style="color:#fff;font-size:17px;font-weight:700;margin-bottom:16px;font-family:'Playfair Display',serif">Student Sign In</h2>
-      <div class="field">
-        <label class="gl">School Email <span class="req">*</span></label>
-        <div class="iw"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><input id="se" class="dark-in" type="email" placeholder="yourname@college.edu"/></div>
-      </div>
-      <div class="field">
-        <label class="gl">Student Number <span class="req">*</span></label>
-        <div class="iw"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h8M8 14h5"/></svg><input id="sn" class="dark-in" type="text" placeholder="e.g. 2024-0001"/></div>
-      </div>
-      <div class="field">
-        <label class="gl">Subject Code <span class="req">*</span></label>
-        <div class="iw"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 012-2h12a2 2 0 012 2v13"/><path d="M4 19a2 2 0 002 2h12a2 2 0 002-2"/><path d="M9 10h6M9 14h4"/></svg><input id="sc2" class="dark-in" type="text" placeholder="e.g. ENG101" onkeydown="if(event.key==='Enter')doSL()"/></div>
-      </div>
-      <div id="se-err" class="aerr"></div>
-      <button class="btn btn-pink btn-lg" onclick="doSL()">Access My Records →</button>
-      <p style="text-align:center;margin-top:14px;font-size:12px;color:#556">🔒 You can only see your own records.</p>
-    </div>
-    <!-- Admin login -->
-    <div id="alf" style="display:none">
-      <button onclick="showRC()" style="background:none;border:none;color:#667;cursor:pointer;font-size:13px;margin-bottom:16px;padding:0">← Back</button>
-      <h2 style="color:#fff;font-size:17px;font-weight:700;margin-bottom:6px;font-family:'Playfair Display',serif">Teacher Admin Panel</h2>
-      <p style="color:#8899bb;font-size:13px;margin-bottom:18px">Enter your admin password to continue.</p>
-      <div class="field">
-        <label class="gl">Admin Password <span class="req">*</span></label>
-        <div class="iw"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg><input id="apw" class="dark-in" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAL()"/></div>
-      </div>
-      <div id="ae-err" class="aerr"></div>
-      <button class="btn btn-gold btn-lg" onclick="doAL()">Enter Admin Panel →</button>
-      <p style="text-align:center;margin-top:12px;font-size:11px;color:#445">Default password: <code style="color:#c9a84c">teacher2026</code></p>
-    </div>
-  </div>
-</div>
-
-<!-- STUDENT DASHBOARD -->
-<div id="ss" class="screen">
-  <nav class="nav">
-    <div class="nav-brand">🎓 Student Portal</div>
-    <div style="display:flex;align-items:center;gap:14px;color:#9ea8c0;font-size:13px">
-      <span>Welcome, <strong id="sw" style="color:#e8d49a"></strong></span>
-      <button class="btn btn-ghost btn-sm" onclick="goHome()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Sign Out
-      </button>
-    </div>
-  </nav>
-  <div class="page">
-    <div class="bnr" id="sb"></div>
-    <div class="tabs">
-      <button class="tb on" id="tsc" onclick="stab('sc')">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        Scores &amp; Grades
-      </button>
-      <button class="tb" id="tat" onclick="stab('at')">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Attendance
-      </button>
-    </div>
-    <div id="scp"></div>
-    <div id="sap" style="display:none"></div>
-  </div>
-</div>
-
-<!-- ADMIN PANEL -->
-<div id="sa" class="screen">
-  <nav class="nav">
-    <div class="nav-brand">📋 Teacher Admin Panel</div>
-    <button class="btn btn-ghost btn-sm" onclick="goHome()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Sign Out
-    </button>
-  </nav>
-  <!-- List view -->
-  <div id="alv">
-    <div class="page">
-      <div id="asts" class="sg" style="margin-bottom:24px"></div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px;position:relative">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px">🔍</span>
-          <input id="asrch" type="text" oninput="rAL()" placeholder="Search by name, student no., or subject…"
-            style="width:100%;padding:10px 14px 10px 36px;border-radius:8px;border:1px solid #e2d9f3;font-size:13px;outline:none;background:#fff"/>
-        </div>
-        <button class="btn btn-pink btn-sm" onclick="openAS()">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Student
-        </button>
-      </div>
-      <div class="tbl">
-        <div class="th atg"><span>Student Name</span><span>Student No.</span><span>Subject</span><span>Scores</span><span>Attendance</span><span>Actions</span></div>
-        <div id="alb"></div>
-      </div>
-    </div>
-  </div>
-  <!-- Detail view -->
-  <div id="adv" style="display:none">
-    <div class="page">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <button onclick="closeD()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1">←</button>
-        <h2 id="dn" style="font-size:18px;font-weight:700;color:#1a1a2e;font-family:'Playfair Display',serif;margin:0"></h2>
-        <span id="dco" class="badge bq"></span>
-        <span id="dinf" style="color:#8899bb;font-size:13px;margin-left:auto"></span>
-      </div>
-      <div id="dsts" class="sg"></div>
-      <div class="tabs">
-        <button class="tb on" id="dtsc" onclick="dtab('sc')">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          Scores
-        </button>
-        <button class="tb" id="dtat" onclick="dtab('at')">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Attendance
-        </button>
-      </div>
-      <div id="dsp"></div>
-      <div id="dap" style="display:none"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL -->
-<div id="mb" class="modal-bg" style="display:none" onclick="if(event.target===this)closeM()">
-  <div class="modal" id="mx"></div>
-</div>
-
-<!-- TOAST -->
-<div id="toast"></div>
-
-<script>
-// ═══════════════════════════════
-// CONFIG — edit these!
-// ═══════════════════════════════
-const TPASS = "teacher2026";
-const SKEY  = "sp_v2";
-
-// ═══════════════════════════════
-// SEED DATA
-// ═══════════════════════════════
-const SEED = [
+// ─────────────────────────────────────────────────────────
+// DEFAULT SEED DATA  (loaded only on first run)
+// ─────────────────────────────────────────────────────────
+const SEED_STUDENTS = [
   {
-    id:"s1",name:"Juan dela Cruz",email:"jdcruz@college.edu",
-    studentNo:"2024-0001",subjectCode:"ENG101",subject:"English 101 – Academic Writing",
-    scores:[
-      {id:"c1",assessment:"Quiz 1",      date:"Feb 03, 2026",score:18,total:20, type:"quiz"},
-      {id:"c2",assessment:"Quiz 2",      date:"Feb 17, 2026",score:15,total:20, type:"quiz"},
-      {id:"c3",assessment:"Midterm Exam",date:"Mar 05, 2026",score:78,total:100,type:"exam"},
-      {id:"c4",assessment:"Essay 1",     date:"Feb 24, 2026",score:88,total:100,type:"activity"},
-      {id:"c5",assessment:"Recitation",  date:"Mar 01, 2026",score:9, total:10, type:"activity"},
+    id: "stu-1",
+    name: "Juan dela Cruz",
+    email: "jdcruz@college.edu",
+    studentNo: "2024-0001",
+    subjectCode: "ENG101",
+    subject: "English 101 – Academic Writing",
+    scores: [
+      { id:"sc1", assessment:"Quiz 1",       date:"Feb 03, 2026", score:18, total:20,  type:"quiz" },
+      { id:"sc2", assessment:"Quiz 2",       date:"Feb 17, 2026", score:15, total:20,  type:"quiz" },
+      { id:"sc3", assessment:"Midterm Exam", date:"Mar 05, 2026", score:78, total:100, type:"exam" },
+      { id:"sc4", assessment:"Essay 1",      date:"Feb 24, 2026", score:88, total:100, type:"activity" },
+      { id:"sc5", assessment:"Recitation",   date:"Mar 01, 2026", score:9,  total:10,  type:"activity" },
     ],
-    attendance:[
-      {id:"a1",date:"Jan 13, 2026",day:"Tuesday", status:"present"},
-      {id:"a2",date:"Jan 15, 2026",day:"Thursday",status:"present"},
-      {id:"a3",date:"Jan 20, 2026",day:"Tuesday", status:"present"},
-      {id:"a4",date:"Jan 22, 2026",day:"Thursday",status:"late"},
-      {id:"a5",date:"Jan 27, 2026",day:"Tuesday", status:"present"},
-      {id:"a6",date:"Jan 29, 2026",day:"Thursday",status:"absent"},
-      {id:"a7",date:"Feb 03, 2026",day:"Tuesday", status:"present"},
-      {id:"a8",date:"Feb 05, 2026",day:"Thursday",status:"excused"},
-    ]
+    attendance: [
+      { id:"at1",  date:"Jan 13, 2026", day:"Tuesday",  status:"present" },
+      { id:"at2",  date:"Jan 15, 2026", day:"Thursday", status:"present" },
+      { id:"at3",  date:"Jan 20, 2026", day:"Tuesday",  status:"present" },
+      { id:"at4",  date:"Jan 22, 2026", day:"Thursday", status:"late"    },
+      { id:"at5",  date:"Jan 27, 2026", day:"Tuesday",  status:"present" },
+      { id:"at6",  date:"Jan 29, 2026", day:"Thursday", status:"absent"  },
+      { id:"at7",  date:"Feb 03, 2026", day:"Tuesday",  status:"present" },
+      { id:"at8",  date:"Feb 05, 2026", day:"Thursday", status:"present" },
+      { id:"at9",  date:"Feb 10, 2026", day:"Tuesday",  status:"present" },
+      { id:"at10", date:"Feb 12, 2026", day:"Thursday", status:"present" },
+    ],
   },
   {
-    id:"s2",name:"Maria Reyes Santos",email:"mrsantos@college.edu",
-    studentNo:"2024-0002",subjectCode:"ENG101",subject:"English 101 – Academic Writing",
-    scores:[
-      {id:"c6", assessment:"Quiz 1",      date:"Feb 03, 2026",score:20,total:20, type:"quiz"},
-      {id:"c7", assessment:"Quiz 2",      date:"Feb 17, 2026",score:19,total:20, type:"quiz"},
-      {id:"c8", assessment:"Midterm Exam",date:"Mar 05, 2026",score:92,total:100,type:"exam"},
-      {id:"c9", assessment:"Essay 1",     date:"Feb 24, 2026",score:95,total:100,type:"activity"},
-      {id:"c10",assessment:"Recitation",  date:"Mar 01, 2026",score:10,total:10, type:"activity"},
+    id: "stu-2",
+    name: "Maria Reyes Santos",
+    email: "mrsantos@college.edu",
+    studentNo: "2024-0002",
+    subjectCode: "ENG101",
+    subject: "English 101 – Academic Writing",
+    scores: [
+      { id:"sc6", assessment:"Quiz 1",       date:"Feb 03, 2026", score:20, total:20,  type:"quiz" },
+      { id:"sc7", assessment:"Quiz 2",       date:"Feb 17, 2026", score:19, total:20,  type:"quiz" },
+      { id:"sc8", assessment:"Midterm Exam", date:"Mar 05, 2026", score:92, total:100, type:"exam" },
+      { id:"sc9", assessment:"Essay 1",      date:"Feb 24, 2026", score:95, total:100, type:"activity" },
+      { id:"sc10",assessment:"Recitation",   date:"Mar 01, 2026", score:10, total:10,  type:"activity" },
     ],
-    attendance:[
-      {id:"b1",date:"Jan 13, 2026",day:"Tuesday", status:"present"},
-      {id:"b2",date:"Jan 15, 2026",day:"Thursday",status:"present"},
-      {id:"b3",date:"Jan 20, 2026",day:"Tuesday", status:"present"},
-      {id:"b4",date:"Jan 22, 2026",day:"Thursday",status:"present"},
-      {id:"b5",date:"Jan 27, 2026",day:"Tuesday", status:"present"},
-      {id:"b6",date:"Jan 29, 2026",day:"Thursday",status:"present"},
-      {id:"b7",date:"Feb 03, 2026",day:"Tuesday", status:"present"},
-      {id:"b8",date:"Feb 05, 2026",day:"Thursday",status:"absent"},
-    ]
-  }
+    attendance: [
+      { id:"at11", date:"Jan 13, 2026", day:"Tuesday",  status:"present" },
+      { id:"at12", date:"Jan 15, 2026", day:"Thursday", status:"present" },
+      { id:"at13", date:"Jan 20, 2026", day:"Tuesday",  status:"present" },
+      { id:"at14", date:"Jan 22, 2026", day:"Thursday", status:"present" },
+      { id:"at15", date:"Jan 27, 2026", day:"Tuesday",  status:"present" },
+      { id:"at16", date:"Jan 29, 2026", day:"Thursday", status:"present" },
+      { id:"at17", date:"Feb 03, 2026", day:"Tuesday",  status:"present" },
+      { id:"at18", date:"Feb 05, 2026", day:"Thursday", status:"present" },
+      { id:"at19", date:"Feb 10, 2026", day:"Tuesday",  status:"present" },
+      { id:"at20", date:"Feb 24, 2026", day:"Tuesday",  status:"absent"  },
+    ],
+  },
 ];
 
-// ═══════════════════════════════
-// DATA
-// ═══════════════════════════════
-function load(){
-  try{ const r=localStorage.getItem(SKEY); if(r) return JSON.parse(r); }catch(e){}
-  const d=JSON.parse(JSON.stringify(SEED));
-  save(d); return d;
+// ─────────────────────────────────────────────────────────
+// STORAGE HELPERS
+// ─────────────────────────────────────────────────────────
+const STORAGE_KEY = "student-portal-data";
+
+function loadStudents() {
+  try {
+    const raw = window.storage && typeof window.storage.get === "function"
+      ? null : null;
+    // Use in-memory for artifact environment
+    if (window.__portalData) return window.__portalData;
+    window.__portalData = JSON.parse(JSON.stringify(SEED_STUDENTS));
+    return window.__portalData;
+  } catch { return JSON.parse(JSON.stringify(SEED_STUDENTS)); }
 }
-function save(d){ try{localStorage.setItem(SKEY,JSON.stringify(d));}catch(e){} }
-function uid(){ return "x"+Math.random().toString(36).slice(2,10); }
 
-let DB=load(), curStu=null, curDid=null;
+function saveStudents(data) {
+  window.__portalData = data;
+}
 
-const STAT={
-  present:{bg:"#d1fae5",tx:"#065f46",lb:"Present"},
-  late:   {bg:"#fef3c7",tx:"#92400e",lb:"Late"},
-  absent: {bg:"#fee2e2",tx:"#991b1b",lb:"Absent"},
-  excused:{bg:"#ede9fe",tx:"#5b21b6",lb:"Excused"},
+function uid() {
+  return "id-" + Math.random().toString(36).slice(2, 10);
+}
+
+// ─────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────
+function avg(scores) {
+  if (!scores.length) return "0.0";
+  const pct = scores.map(s => (s.score / s.total) * 100);
+  return (pct.reduce((a, b) => a + b, 0) / pct.length).toFixed(1);
+}
+
+const typeColors = {
+  quiz:     { bg:"#e8f0fe", text:"#1a56b0", border:"#93b4f5" },
+  exam:     { bg:"#fce8f3", text:"#9d174d", border:"#f0a0cc" },
+  activity: { bg:"#fdf3e0", text:"#92400e", border:"#e9c06a" },
 };
-const TBADGE={quiz:"bq",exam:"be",activity:"ba"};
-const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-function avg(sc){
-  if(!sc.length) return "0.0";
-  return (sc.map(s=>(s.score/s.total)*100).reduce((a,b)=>a+b,0)/sc.length).toFixed(1);
-}
-function ats(att){
-  const p=att.filter(a=>a.status==="present").length;
-  const l=att.filter(a=>a.status==="late").length;
-  const ab=att.filter(a=>a.status==="absent").length;
-  const ex=att.filter(a=>a.status==="excused").length;
-  const t=att.length;
-  return{present:p,late:l,absent:ab,excused:ex,total:t,pct:t?Math.round(((p+l+ex)/t)*100):0};
-}
-function scol(p){return p>=75?"#065f46":p>=60?"#92400e":"#991b1b";}
-function sbar(p){return p>=75?"linear-gradient(90deg,#10b981,#059669)":p>=60?"linear-gradient(90deg,#f59e0b,#d97706)":"linear-gradient(90deg,#ef4444,#dc2626)";}
-function sc(v,l,c){return `<div class="sc" style="border:1px solid ${c}33"><div class="sv" style="color:${c}">${v}</div><div class="sl">${l}</div></div>`;}
+const statusStyles = {
+  present: { bg:"#d1fae5", text:"#065f46", label:"Present" },
+  late:    { bg:"#fef3c7", text:"#92400e", label:"Late"    },
+  absent:  { bg:"#fee2e2", text:"#991b1b", label:"Absent"  },
+  excused: { bg:"#ede9fe", text:"#5b21b6", label:"Excused" },
+};
 
-// TOAST
-let tt;
-function toast(msg,type="ok"){
-  const t=document.getElementById("toast");
-  t.style.background=type==="ok"?"#065f46":"#991b1b";
-  t.innerHTML=(type==="ok"?"✓ ":"⚠ ")+msg;
-  t.style.display="flex"; clearTimeout(tt);
-  tt=setTimeout(()=>{t.style.display="none";},2800);
-}
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-// SCREENS
-function show(id){
-  ["sh","ss","sa"].forEach(s=>{
-    const el=document.getElementById(s);
-    el.classList.remove("on");
-    if(s==="sh") el.style.display="none";
-    else el.style.display="none";
-  });
-  const el=document.getElementById(id);
-  if(id==="sh"){el.style.display="flex";}
-  else{el.style.display="block";}
-  window.scrollTo(0,0);
-}
+// ─────────────────────────────────────────────────────────
+// ICONS
+// ─────────────────────────────────────────────────────────
+const Ico = {
+  User:    () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+  ID:      () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h8M8 14h5"/></svg>,
+  Book:    () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 012-2h12a2 2 0 012 2v13"/><path d="M4 19a2 2 0 002 2h12a2 2 0 002-2"/><path d="M9 10h6M9 14h4"/></svg>,
+  Logout:  () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Score:   () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+  Cal:     () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  Plus:    () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  Trash:   () => <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
+  Edit:    () => <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  Admin:   () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+  Check:   () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>,
+  Students:() => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+  Key:     () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg>,
+};
 
-function goHome(){
-  curStu=null; curDid=null;
-  ["se","sn","sc2","apw"].forEach(i=>{const el=document.getElementById(i); if(el) el.value="";});
-  showRC(); show("sh");
-}
+// ─────────────────────────────────────────────────────────
+// SHARED UI ATOMS
+// ─────────────────────────────────────────────────────────
+const C = {
+  pink: "#e91e8c", blue: "#2979ff", gold: "#c9a84c", grey: "#8899aa",
+  dark: "#1a1a2e", mid: "#16213e", navy: "#0f3460",
+  pinkLight: "#fce8f3", blueLight: "#e8f0fe",
+  goldLight: "#fdf3e0", greyLight: "#f4f0f8",
+};
 
-// HOME
-function showRC(){
-  document.getElementById("rc").style.display="block";
-  document.getElementById("slf").style.display="none";
-  document.getElementById("alf").style.display="none";
-}
-function showSL(){
-  document.getElementById("rc").style.display="none";
-  document.getElementById("slf").style.display="block";
-  document.getElementById("se-err").style.display="none";
-}
-function showAL(){
-  document.getElementById("rc").style.display="none";
-  document.getElementById("alf").style.display="block";
-  document.getElementById("ae-err").style.display="none";
+function Btn({ children, onClick, variant="primary", size="md", disabled=false, style={} }) {
+  const base = {
+    display:"inline-flex", alignItems:"center", gap:6, border:"none",
+    borderRadius:8, cursor:disabled?"not-allowed":"pointer", fontFamily:"'Georgia',serif",
+    fontWeight:600, transition:"all 0.18s", opacity:disabled?0.5:1,
+  };
+  const sizes = { sm:{padding:"6px 14px",fontSize:12}, md:{padding:"10px 20px",fontSize:13}, lg:{padding:"13px 26px",fontSize:15} };
+  const variants = {
+    primary:  { background:`linear-gradient(135deg,${C.pink},#c2185b)`, color:"#fff", boxShadow:`0 4px 14px ${C.pink}44` },
+    blue:     { background:`linear-gradient(135deg,${C.blue},#1565c0)`, color:"#fff", boxShadow:`0 4px 14px ${C.blue}44` },
+    gold:     { background:`linear-gradient(135deg,${C.gold},#a07828)`, color:"#fff", boxShadow:`0 4px 14px ${C.gold}44` },
+    ghost:    { background:"rgba(255,255,255,0.08)", color:"#ccc", border:"1px solid rgba(255,255,255,0.15)" },
+    danger:   { background:"#fee2e2", color:"#991b1b", border:"1px solid #fca5a5" },
+    outline:  { background:"transparent", color:C.pink, border:`1px solid ${C.pink}` },
+  };
+  return (
+    <button onClick={disabled?undefined:onClick} style={{...base,...sizes[size],...variants[variant],...style}}>
+      {children}
+    </button>
+  );
 }
 
-// STUDENT LOGIN
-function doSL(){
-  const em=document.getElementById("se").value.trim().toLowerCase();
-  const sn=document.getElementById("sn").value.trim().toLowerCase();
-  const cd=document.getElementById("sc2").value.trim().toLowerCase();
-  const err=document.getElementById("se-err");
-  err.style.display="none";
-  if(!em||!sn||!cd){err.textContent="Please fill in all fields.";err.style.display="block";return;}
-  DB=load();
-  const f=DB.find(s=>s.email.toLowerCase()===em&&s.studentNo.toLowerCase()===sn&&s.subjectCode.toLowerCase()===cd);
-  if(!f){err.textContent="No matching record found. Please check your details.";err.style.display="block";return;}
-  curStu=f; rSD(); show("ss");
-}
-
-// ADMIN LOGIN
-function doAL(){
-  const pw=document.getElementById("apw").value;
-  const err=document.getElementById("ae-err");
-  err.style.display="none";
-  if(pw!==TPASS){err.textContent="Incorrect password. Please try again.";err.style.display="block";document.getElementById("apw").value="";return;}
-  DB=load(); rAP(); show("sa");
-}
-
-// ══════════════════════════════
-// STUDENT DASHBOARD
-// ══════════════════════════════
-function rSD(){
-  const s=curStu; const st=ats(s.attendance); const ag=avg(s.scores);
-  document.getElementById("sw").textContent=s.name.split(" ")[0];
-  document.getElementById("sb").innerHTML=`
-    <div class="bav">${s.name.charAt(0)}</div>
-    <div style="flex:1;min-width:150px">
-      <div style="color:#fff;font-size:18px;font-weight:700;margin-bottom:2px">${s.name}</div>
-      <div style="color:#9ea8c0;font-size:13px">${s.subject}</div>
+function Input({ label, value, onChange, type="text", placeholder="", required=false, dark=false }) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <div style={{marginBottom:14}}>
+      {label && <label style={{display:"block",fontSize:11,fontWeight:600,letterSpacing:"0.15em",
+        textTransform:"uppercase",color:dark?"#c9a84c":"#7a6ea0",marginBottom:5}}>{label}{required&&<span style={{color:C.pink}}> *</span>}</label>}
+      <input type={type} value={value} placeholder={placeholder}
+        onChange={e=>onChange(e.target.value)}
+        onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)}
+        style={{width:"100%",padding:"10px 14px",borderRadius:8,fontFamily:"'Georgia',serif",fontSize:14,
+          background:dark?"rgba(255,255,255,0.06)":"#fff",
+          color:dark?"#e8eaf6":"#1a1a2e",
+          border:`1px solid ${focus?(dark?C.gold:C.pink):(dark?"rgba(255,255,255,0.12)":"#e2d9f3")}`,
+          outline:"none",transition:"border 0.2s",boxSizing:"border-box"}}/>
     </div>
-    <div class="sp"><div class="spv" style="color:#e91e8c">${ag}%</div><div class="spl">Avg Score</div></div>
-    <div class="sp"><div class="spv" style="color:#2979ff">${st.pct}%</div><div class="spl">Attendance</div></div>
-    <div class="sp"><div class="spv" style="color:${st.absent>3?"#ef4444":"#c9a84c"}">${st.absent}</div><div class="spl">Absences</div></div>`;
-  rSS(); rSA(); stab("sc");
-}
-function stab(t){
-  document.getElementById("tsc").classList.toggle("on",t==="sc");
-  document.getElementById("tat").classList.toggle("on",t==="at");
-  document.getElementById("scp").style.display=t==="sc"?"block":"none";
-  document.getElementById("sap").style.display=t==="at"?"block":"none";
-}
-function rSS(){
-  const sc=curStu.scores;
-  const e=sc.reduce((a,s)=>a+s.score,0), m=sc.reduce((a,s)=>a+s.total,0);
-  const p=m?((e/m)*100).toFixed(1):0;
-  let h=`<div class="card" style="margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:12px;font-weight:600;color:#7a6ea0;letter-spacing:.08em">OVERALL AVERAGE</span>
-      <span style="font-size:22px;font-weight:700;color:#e91e8c">${p}%</span>
-    </div>
-    <div style="height:9px;background:#f0e6fa;border-radius:5px;overflow:hidden;margin-bottom:6px">
-      <div style="height:100%;width:${p}%;border-radius:5px;background:linear-gradient(90deg,#e91e8c,#2979ff)"></div>
-    </div>
-    <div style="text-align:right;font-size:12px;color:#aaa">${e} / ${m} pts</div>
-  </div>`;
-  if(!sc.length){h+=`<div class="empty">No score records available yet.</div>`;}
-  else sc.forEach(s=>{
-    const sp=((s.score/s.total)*100).toFixed(1);
-    h+=`<div class="srow">
-      <span class="badge ${TBADGE[s.type]||"ba"}">${s.type.toUpperCase()}</span>
-      <div style="flex:1;min-width:110px"><div style="font-weight:600;color:#1a1a2e;font-size:14px">${s.assessment}</div><div style="color:#aaa;font-size:12px">${s.date}</div></div>
-      <div style="text-align:right"><div style="font-size:17px;font-weight:700;color:${scol(sp)}">${s.score}<span style="font-size:12px;color:#bbb;font-weight:400"> / ${s.total}</span></div><div style="font-size:12px;color:#888">${sp}%</div></div>
-      <div class="mbar"><div style="height:100%;width:${sp}%;border-radius:2px;background:${sbar(sp)}"></div></div>
-    </div>`;
-  });
-  document.getElementById("scp").innerHTML=h;
-}
-function rSA(){
-  const att=curStu.attendance; const st=ats(att);
-  let h=`<div class="sg">${sc(st.total,"Total Classes","#2979ff")}${sc(st.present,"Present","#065f46")}${sc(st.late,"Late","#92400e")}${sc(st.absent,"Absent",st.absent>3?"#ef4444":"#991b1b")}${sc(st.excused,"Excused","#5b21b6")}${sc(st.pct+"%","Attendance Rate","#c9a84c")}</div>`;
-  if(st.absent>3) h+=`<div class="awarn">⚠️ You have <strong>${st.absent} absences</strong>. Please be mindful of your attendance standing.</div>`;
-  if(!att.length){h+=`<div class="empty">No attendance records available yet.</div>`;}
-  else{
-    h+=`<div class="tbl"><div class="th att3"><span>Date</span><span>Day</span><span>Status</span></div>`;
-    att.forEach((a,i)=>{
-      const ss=STAT[a.status]||STAT.absent;
-      h+=`<div class="tr att3" style="background:${i%2===0?"#fff":"#faf7fe"}">
-        <span style="font-size:14px;color:#1a1a2e">${a.date}</span>
-        <span style="font-size:14px;color:#7a6ea0">${a.day}</span>
-        <span class="badge" style="background:${ss.bg};color:${ss.tx}"><span class="dot" style="background:${ss.tx}"></span>${ss.lb}</span>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  document.getElementById("sap").innerHTML=h;
+  );
 }
 
-// ══════════════════════════════
-// ADMIN PANEL
-// ══════════════════════════════
-function rAP(){
-  document.getElementById("alv").style.display="block";
-  document.getElementById("adv").style.display="none";
-  rAS(); rAL();
-}
-function rAS(){
-  document.getElementById("asts").innerHTML=
-    sc(DB.length,"Total Students","#2979ff")+
-    sc(new Set(DB.map(s=>s.subjectCode)).size,"Subjects","#c9a84c")+
-    sc(DB.reduce((a,s)=>a+s.scores.length,0),"Score Records","#e91e8c")+
-    sc(DB.reduce((a,s)=>a+s.attendance.length,0),"Attendance Records","#10b981");
-}
-function rAL(){
-  const q=(document.getElementById("asrch")||{value:""}).value.toLowerCase();
-  const f=DB.filter(s=>s.name.toLowerCase().includes(q)||s.studentNo.toLowerCase().includes(q)||s.subjectCode.toLowerCase().includes(q));
-  const b=document.getElementById("alb");
-  if(!f.length){b.innerHTML=`<div class="empty">${q?"No students match your search.":"No students yet. Click 'Add Student' to get started."}</div>`;return;}
-  b.innerHTML=f.map((s,i)=>`
-    <div class="tr atg" style="background:${i%2===0?"#fff":"#faf7fe"}">
-      <div><div style="font-weight:600;color:#1a1a2e;font-size:14px">${s.name}</div><div style="color:#999;font-size:12px;margin-top:2px">${s.email}</div></div>
-      <span style="color:#5a6ea0;font-size:13px">${s.studentNo}</span>
-      <span class="badge bq">${s.subjectCode}</span>
-      <span style="color:#666;font-size:13px">${s.scores.length} entries</span>
-      <span style="color:#666;font-size:13px">${s.attendance.length} sessions</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn-edit" onclick="openD('${s.id}')">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit
-        </button>
-        <button class="btn-del" onclick="delS('${s.id}')">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        </button>
-      </div>
-    </div>`).join("");
-}
-
-// DETAIL
-function openD(id){
-  curDid=id;
-  document.getElementById("alv").style.display="none";
-  document.getElementById("adv").style.display="block";
-  rD(); dtab("sc");
-}
-function closeD(){
-  curDid=null;
-  document.getElementById("alv").style.display="block";
-  document.getElementById("adv").style.display="none";
-  rAS(); rAL();
-}
-function gds(){return DB.find(s=>s.id===curDid);}
-function rD(){
-  const s=gds(); if(!s) return;
-  const st=ats(s.attendance); const ag=avg(s.scores);
-  document.getElementById("dn").textContent=s.name;
-  document.getElementById("dco").textContent=s.subjectCode;
-  document.getElementById("dinf").textContent=s.email+" · "+s.studentNo;
-  document.getElementById("dsts").innerHTML=
-    sc(ag+"%","Avg Score","#e91e8c")+sc(s.scores.length,"Assessments","#2979ff")+
-    sc(st.pct+"%","Attendance Rate","#c9a84c")+sc(st.absent,"Absences",st.absent>3?"#ef4444":"#10b981")+
-    sc(st.excused,"Excused","#5b21b6");
-  rDS(); rDA();
-}
-function dtab(t){
-  document.getElementById("dtsc").classList.toggle("on",t==="sc");
-  document.getElementById("dtat").classList.toggle("on",t==="at");
-  document.getElementById("dsp").style.display=t==="sc"?"block":"none";
-  document.getElementById("dap").style.display=t==="at"?"block":"none";
-}
-function rDS(){
-  const s=gds();
-  let h=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button class="btn btn-pink btn-sm" onclick="openAddSc()">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Score
-    </button></div>`;
-  if(!s.scores.length){h+=`<div class="empty">No scores yet.</div>`;}
-  else s.scores.forEach(sc2=>{
-    const sp=((sc2.score/sc2.total)*100).toFixed(1);
-    h+=`<div class="srow">
-      <span class="badge ${TBADGE[sc2.type]||"ba"}">${sc2.type.toUpperCase()}</span>
-      <div style="flex:1;min-width:100px"><div style="font-weight:600;color:#1a1a2e;font-size:14px">${sc2.assessment}</div><div style="color:#aaa;font-size:12px">${sc2.date}</div></div>
-      <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:${scol(sp)}">${sc2.score}<span style="font-size:12px;color:#bbb;font-weight:400"> / ${sc2.total}</span></div><div style="font-size:12px;color:#888">${sp}%</div></div>
-      <div style="display:flex;gap:6px">
-        <button class="btn-edit" onclick="openEditSc('${sc2.id}')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn-del" onclick="delSc('${sc2.id}')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-      </div>
-      <div class="mbar"><div style="height:100%;width:${sp}%;border-radius:2px;background:${sbar(sp)}"></div></div>
-    </div>`;
-  });
-  document.getElementById("dsp").innerHTML=h;
-}
-function rDA(){
-  const s=gds();
-  let h=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button class="btn btn-pink btn-sm" onclick="openAddAt()">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Session
-    </button></div>`;
-  if(!s.attendance.length){h+=`<div class="empty">No attendance records yet.</div>`;}
-  else{
-    h+=`<div class="tbl"><div class="th att4"><span>Date</span><span>Day</span><span>Status</span><span></span></div>`;
-    s.attendance.forEach((a,i)=>{
-      const ss=STAT[a.status]||STAT.absent;
-      h+=`<div class="tr att4" style="background:${i%2===0?"#fff":"#faf7fe"}">
-        <span style="font-size:14px;color:#1a1a2e">${a.date}</span>
-        <span style="font-size:14px;color:#7a6ea0">${a.day}</span>
-        <span class="badge" style="background:${ss.bg};color:${ss.tx}"><span class="dot" style="background:${ss.tx}"></span>${ss.lb}</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn-edit" onclick="openEditAt('${a.id}')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="btn-del" onclick="delAt('${a.id}')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-        </div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  document.getElementById("dap").innerHTML=h;
-}
-
-// MODALS
-function openM(h){document.getElementById("mx").innerHTML=h;document.getElementById("mb").style.display="flex";}
-function closeM(){document.getElementById("mb").style.display="none";document.getElementById("mx").innerHTML="";}
-
-function openAS(){
-  openM(`<div class="mhdr"><h3>➕ Add New Student</h3><button class="mclose" onclick="closeM()">×</button></div>
-    <div class="field"><label>Full Name <span class="req">*</span></label><input id="mn" type="text" placeholder="e.g. Ana Maria Cruz"/></div>
-    <div class="field"><label>School Email <span class="req">*</span></label><input id="mem" type="email" placeholder="student@college.edu"/></div>
-    <div class="field"><label>Student Number <span class="req">*</span></label><input id="msn" type="text" placeholder="e.g. 2024-0003"/></div>
-    <div class="field"><label>Subject Code <span class="req">*</span></label><input id="mcd" type="text" placeholder="e.g. ENG101"/></div>
-    <div class="field"><label>Subject Name <span class="req">*</span></label><input id="msub" type="text" placeholder="e.g. English 101 – Academic Writing"/></div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM()">Cancel</button><button class="btn btn-pink" onclick="saveAS()">Save Student</button></div>`);
-}
-function saveAS(){
-  const n=v("mn"),em=v("mem"),sn=v("msn"),cd=v("mcd"),sub=v("msub");
-  if(!n||!em||!sn||!cd||!sub){alert("Please fill in all fields.");return;}
-  DB.push({id:uid(),name:n,email:em,studentNo:sn,subjectCode:cd,subject:sub,scores:[],attendance:[]});
-  save(DB);closeM();rAS();rAL();toast("Student added successfully!");
-}
-function delS(id){
-  if(!confirm("Delete this student and all their records?")) return;
-  DB=DB.filter(s=>s.id!==id);save(DB);rAS();rAL();toast("Student deleted.","err");
-}
-
-function openAddSc(){
-  openM(`<div class="mhdr"><h3>➕ Add Score</h3><button class="mclose" onclick="closeM()">×</button></div>
-    <div class="field"><label>Assessment Name <span class="req">*</span></label><input id="man" type="text" placeholder="e.g. Quiz 1"/></div>
-    <div class="field"><label>Date <span class="req">*</span></label><input id="mad" type="text" placeholder="e.g. Mar 10, 2026"/></div>
-    <div class="grid2">
-      <div class="field"><label>Score <span class="req">*</span></label><input id="msc" type="number" placeholder="85" min="0"/></div>
-      <div class="field"><label>Total Points <span class="req">*</span></label><input id="mto" type="number" placeholder="100" min="1"/></div>
-    </div>
-    <div class="field"><label>Type</label>
-      <select id="mty"><option value="quiz">Quiz</option><option value="exam">Exam</option><option value="activity">Activity</option></select>
-    </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM()">Cancel</button><button class="btn btn-pink" onclick="saveSc(null)">Add Score</button></div>`);
-}
-function openEditSc(id){
-  const s=gds(),x=s.scores.find(c=>c.id===id);
-  openM(`<div class="mhdr"><h3>✏️ Edit Score</h3><button class="mclose" onclick="closeM()">×</button></div>
-    <div class="field"><label>Assessment Name <span class="req">*</span></label><input id="man" type="text" value="${x.assessment}"/></div>
-    <div class="field"><label>Date <span class="req">*</span></label><input id="mad" type="text" value="${x.date}"/></div>
-    <div class="grid2">
-      <div class="field"><label>Score <span class="req">*</span></label><input id="msc" type="number" value="${x.score}" min="0"/></div>
-      <div class="field"><label>Total Points <span class="req">*</span></label><input id="mto" type="number" value="${x.total}" min="1"/></div>
-    </div>
-    <div class="field"><label>Type</label>
-      <select id="mty"><option value="quiz" ${x.type==="quiz"?"selected":""}>Quiz</option><option value="exam" ${x.type==="exam"?"selected":""}>Exam</option><option value="activity" ${x.type==="activity"?"selected":""}>Activity</option></select>
-    </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM()">Cancel</button><button class="btn btn-pink" onclick="saveSc('${id}')">Update Score</button></div>`);
-}
-function saveSc(eid){
-  const an=v("man"),ad=v("mad"),sc=parseFloat(v("msc")),to=parseFloat(v("mto")),ty=v("mty");
-  if(!an||!ad||isNaN(sc)||isNaN(to)){alert("Please fill in all fields.");return;}
-  const s=gds();
-  if(eid){Object.assign(s.scores.find(c=>c.id===eid),{assessment:an,date:ad,score:sc,total:to,type:ty});toast("Score updated!");}
-  else{s.scores.push({id:uid(),assessment:an,date:ad,score:sc,total:to,type:ty});toast("Score added!");}
-  save(DB);closeM();rD();
-}
-function delSc(id){
-  if(!confirm("Delete this score?")) return;
-  gds().scores=gds().scores.filter(c=>c.id!==id);save(DB);rD();toast("Score deleted.","err");
-}
-
-function openAddAt(){
-  openM(`<div class="mhdr"><h3>➕ Add Attendance Session</h3><button class="mclose" onclick="closeM()">×</button></div>
-    <div class="field"><label>Date <span class="req">*</span></label><input id="mdt" type="text" placeholder="e.g. Mar 10, 2026"/></div>
-    <div class="field"><label>Day</label><select id="mdy">${DAYS.map(d=>`<option>${d}</option>`).join("")}</select></div>
-    <div class="field"><label>Status</label>
-      <select id="mst"><option value="present">✅ Present</option><option value="late">⏰ Late</option><option value="absent">❌ Absent</option><option value="excused">📋 Excused</option></select>
-    </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM()">Cancel</button><button class="btn btn-pink" onclick="saveAt(null)">Add Session</button></div>`);
-}
-function openEditAt(id){
-  const s=gds(),a=s.attendance.find(x=>x.id===id);
-  openM(`<div class="mhdr"><h3>✏️ Edit Attendance</h3><button class="mclose" onclick="closeM()">×</button></div>
-    <div class="field"><label>Date <span class="req">*</span></label><input id="mdt" type="text" value="${a.date}"/></div>
-    <div class="field"><label>Day</label><select id="mdy">${DAYS.map(d=>`<option value="${d}" ${d===a.day?"selected":""}>${d}</option>`).join("")}</select></div>
-    <div class="field"><label>Status</label>
-      <select id="mst">
-        <option value="present" ${a.status==="present"?"selected":""}>✅ Present</option>
-        <option value="late"    ${a.status==="late"   ?"selected":""}>⏰ Late</option>
-        <option value="absent"  ${a.status==="absent" ?"selected":""}>❌ Absent</option>
-        <option value="excused" ${a.status==="excused"?"selected":""}>📋 Excused</option>
+function Select({ label, value, onChange, options, dark=false }) {
+  return (
+    <div style={{marginBottom:14}}>
+      {label && <label style={{display:"block",fontSize:11,fontWeight:600,letterSpacing:"0.15em",
+        textTransform:"uppercase",color:dark?"#c9a84c":"#7a6ea0",marginBottom:5}}>{label}</label>}
+      <select value={value} onChange={e=>onChange(e.target.value)}
+        style={{width:"100%",padding:"10px 14px",borderRadius:8,fontFamily:"'Georgia',serif",fontSize:14,
+          background:dark?"rgba(255,255,255,0.08)":"#fff",
+          color:dark?"#e8eaf6":"#1a1a2e",
+          border:`1px solid ${dark?"rgba(255,255,255,0.12)":"#e2d9f3"}`,
+          outline:"none",boxSizing:"border-box"}}>
+        {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM()">Cancel</button><button class="btn btn-pink" onclick="saveAt('${id}')">Update</button></div>`);
-}
-function saveAt(eid){
-  const dt=v("mdt"),dy=v("mdy"),st=v("mst");
-  if(!dt){alert("Please enter a date.");return;}
-  const s=gds();
-  if(eid){Object.assign(s.attendance.find(a=>a.id===eid),{date:dt,day:dy,status:st});toast("Attendance updated!");}
-  else{s.attendance.push({id:uid(),date:dt,day:dy,status:st});toast("Attendance added!");}
-  save(DB);closeM();rD();
-}
-function delAt(id){
-  if(!confirm("Delete this attendance record?")) return;
-  gds().attendance=gds().attendance.filter(a=>a.id!==id);save(DB);rD();toast("Record deleted.","err");
+  );
 }
 
-function v(id){const el=document.getElementById(id);return el?el.value.trim():"";}
-</script>
-</body>
-</html>
+function Modal({ title, children, onClose }) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:1000,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"28px 32px",width:"100%",maxWidth:500,
+        maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,0.3)",
+        animation:"slideUp 0.25s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22,
+          borderBottom:`2px solid ${C.gold}`,paddingBottom:14}}>
+          <h3 style={{margin:0,fontSize:18,color:C.dark,fontFamily:"'Georgia',serif"}}>{title}</h3>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,
+            cursor:"pointer",color:"#aaa",lineHeight:1}}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Toast({ msg, type="success" }) {
+  return (
+    <div style={{position:"fixed",bottom:28,right:28,zIndex:2000,
+      background:type==="success"?"#065f46":"#991b1b",
+      color:"#fff",padding:"12px 22px",borderRadius:10,fontSize:14,fontWeight:600,
+      boxShadow:"0 8px 24px rgba(0,0,0,0.3)",animation:"slideUp 0.3s ease",
+      display:"flex",alignItems:"center",gap:8}}>
+      {type==="success"?<Ico.Check/>:"⚠"} {msg}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ROOT APP
+// ─────────────────────────────────────────────────────────
+export default function App() {
+  const [screen, setScreen]   = useState("home");   // home | student | admin
+  const [students, setStudents] = useState(() => loadStudents());
+  const [loggedInStudent, setLoggedInStudent] = useState(null);
+  const [toast, setToast]     = useState(null);
+
+  function showToast(msg, type="success") {
+    setToast({msg,type});
+    setTimeout(()=>setToast(null), 2800);
+  }
+
+  function updateStudents(newData) {
+    setStudents(newData);
+    saveStudents(newData);
+  }
+
+  if (screen === "student" && loggedInStudent) {
+    // Find fresh copy from store
+    const fresh = students.find(s => s.id === loggedInStudent.id) || loggedInStudent;
+    return <StudentDashboard student={fresh} onLogout={()=>{setLoggedInStudent(null);setScreen("home");}}/>;
+  }
+  if (screen === "admin") {
+    return <AdminPanel students={students} updateStudents={updateStudents}
+      onLogout={()=>setScreen("home")} showToast={showToast}/>;
+  }
+
+  return (
+    <>
+      <HomePage
+        students={students}
+        onStudentLogin={(s)=>{ setLoggedInStudent(s); setScreen("student"); }}
+        onAdminLogin={()=>setScreen("admin")}/>
+      {toast && <Toast msg={toast.msg} type={toast.type}/>}
+      <style>{`
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        *{box-sizing:border-box} input::placeholder{color:#9aa} select option{color:#1a1a2e;background:#fff}
+      `}</style>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// HOME — two-card chooser
+// ─────────────────────────────────────────────────────────
+function HomePage({ students, onStudentLogin, onAdminLogin }) {
+  const [mode, setMode] = useState(null); // null | "student" | "admin"
+
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.dark} 0%,${C.mid} 50%,${C.navy} 100%)`,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:24,
+      fontFamily:"'Georgia',serif",position:"relative",overflow:"hidden"}}>
+      {/* blobs */}
+      <div style={{position:"absolute",top:"-80px",left:"-80px",width:340,height:340,borderRadius:"50%",
+        background:`radial-gradient(circle,${C.pink}22 0%,transparent 70%)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:"-100px",right:"-60px",width:400,height:400,borderRadius:"50%",
+        background:`radial-gradient(circle,${C.blue}1a 0%,transparent 70%)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"40%",left:"55%",width:220,height:220,borderRadius:"50%",
+        background:`radial-gradient(circle,${C.gold}18 0%,transparent 70%)`,pointerEvents:"none"}}/>
+
+      <div style={{width:"100%",maxWidth:480,animation:"slideUp 0.5s ease"}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{width:68,height:68,borderRadius:"50%",
+            background:`linear-gradient(135deg,${C.pink},${C.blue})`,
+            margin:"0 auto 16px",display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:28,boxShadow:`0 4px 24px ${C.pink}55`}}>🎓</div>
+          <h1 style={{color:"#fff",fontSize:26,fontWeight:700,margin:"0 0 6px"}}>Student Portal</h1>
+          <p style={{color:"#9ea8c0",fontSize:13,margin:0}}>Select how you'd like to sign in</p>
+        </div>
+
+        {!mode ? (
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            <RoleCard icon="🎒" title="I'm a Student" desc="View my scores & attendance"
+              color={C.pink} onClick={()=>setMode("student")}/>
+            <RoleCard icon="📋" title="I'm a Teacher" desc="Manage students & records"
+              color={C.gold} onClick={()=>setMode("admin")}/>
+          </div>
+        ) : mode === "student" ? (
+          <StudentLogin students={students} onLogin={onStudentLogin} onBack={()=>setMode(null)}/>
+        ) : (
+          <AdminLogin onLogin={onAdminLogin} onBack={()=>setMode(null)}/>
+        )}
+      </div>
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box}input::placeholder{color:#667}`}</style>
+    </div>
+  );
+}
+
+function RoleCard({ icon, title, desc, color, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onClick={onClick}
+      onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
+      style={{background:hover?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.05)",
+        border:`1px solid ${hover?color+"88":"rgba(255,255,255,0.1)"}`,
+        borderRadius:14,padding:"28px 20px",textAlign:"center",cursor:"pointer",
+        transition:"all 0.2s",transform:hover?"translateY(-3px)":"none",
+        boxShadow:hover?`0 12px 32px ${color}33`:"none"}}>
+      <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
+      <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:4}}>{title}</div>
+      <div style={{color:"#8899bb",fontSize:12}}>{desc}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// STUDENT LOGIN
+// ─────────────────────────────────────────────────────────
+function StudentLogin({ students, onLogin, onBack }) {
+  const [email, setEmail]   = useState("");
+  const [stuNo, setStuNo]   = useState("");
+  const [code, setCode]     = useState("");
+  const [error, setError]   = useState("");
+  const [loading, setLoading] = useState(false);
+
+  function handleSubmit() {
+    setError("");
+    if (!email||!stuNo||!code) { setError("Please fill in all fields."); return; }
+    setLoading(true);
+    setTimeout(()=>{
+      const found = students.find(s =>
+        s.email.toLowerCase()===email.trim().toLowerCase() &&
+        s.studentNo.toLowerCase()===stuNo.trim().toLowerCase() &&
+        s.subjectCode.toLowerCase()===code.trim().toLowerCase()
+      );
+      if (found) { onLogin(found); }
+      else { setError("No matching record found. Please check your details."); }
+      setLoading(false);
+    }, 700);
+  }
+
+  return (
+    <div style={{background:"rgba(255,255,255,0.04)",backdropFilter:"blur(16px)",
+      border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"36px 32px",
+      boxShadow:"0 24px 64px rgba(0,0,0,0.4)"}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:"#778",
+        cursor:"pointer",fontSize:13,marginBottom:18,padding:0,fontFamily:"'Georgia',serif"}}>
+        ← Back
+      </button>
+      <h2 style={{color:"#fff",fontSize:18,fontWeight:700,marginBottom:20,marginTop:0}}>Student Sign In</h2>
+      <div style={{height:1,background:`linear-gradient(90deg,transparent,${C.gold}66,transparent)`,marginBottom:24}}/>
+      <DarkField icon={<Ico.User/>}  label="School Email" type="email"   placeholder="yourname@college.edu" value={email} set={setEmail}/>
+      <DarkField icon={<Ico.ID/>}    label="Student No."  type="text"    placeholder="e.g. 2024-0001"        value={stuNo} set={setStuNo}/>
+      <DarkField icon={<Ico.Book/>}  label="Subject Code" type="text"    placeholder="e.g. ENG101"           value={code}  set={setCode} onEnter={handleSubmit}/>
+      {error && <div style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.3)",
+        color:"#fca5a5",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:14}}>{error}</div>}
+      <Btn onClick={handleSubmit} disabled={loading} size="lg" style={{width:"100%",justifyContent:"center",marginTop:4}}>
+        {loading?"Verifying…":"Access My Records →"}
+      </Btn>
+      <p style={{textAlign:"center",marginTop:16,fontSize:12,color:"#556"}}>🔒 You can only see your own records.</p>
+    </div>
+  );
+}
+
+function DarkField({icon,label,type,placeholder,value,set,onEnter}) {
+  const [focus,setFocus]=useState(false);
+  return (
+    <div style={{marginBottom:14}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,letterSpacing:"0.15em",
+        textTransform:"uppercase",color:C.gold,marginBottom:5}}>{label}</label>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",
+          color:"#5a6890",pointerEvents:"none"}}>{icon}</span>
+        <input type={type} placeholder={placeholder} value={value}
+          onChange={e=>set(e.target.value)}
+          onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)}
+          onKeyDown={e=>{if(e.key==="Enter"&&onEnter)onEnter()}}
+          style={{width:"100%",padding:"11px 14px 11px 44px",
+            background:"rgba(255,255,255,0.06)",
+            border:`1px solid ${focus?C.gold:"rgba(255,255,255,0.12)"}`,
+            borderRadius:8,color:"#e8eaf6",fontSize:14,
+            fontFamily:"'Georgia',serif",outline:"none",transition:"border 0.2s",boxSizing:"border-box"}}/>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ADMIN LOGIN
+// ─────────────────────────────────────────────────────────
+function AdminLogin({ onLogin, onBack }) {
+  const [pw, setPw]     = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit() {
+    if (pw === TEACHER_PASSWORD) { onLogin(); }
+    else { setError("Incorrect password. Please try again."); setPw(""); }
+  }
+
+  return (
+    <div style={{background:"rgba(255,255,255,0.04)",backdropFilter:"blur(16px)",
+      border:`1px solid ${C.gold}44`,borderRadius:16,padding:"36px 32px",
+      boxShadow:"0 24px 64px rgba(0,0,0,0.4)"}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:"#778",
+        cursor:"pointer",fontSize:13,marginBottom:18,padding:0,fontFamily:"'Georgia',serif"}}>
+        ← Back
+      </button>
+      <h2 style={{color:"#fff",fontSize:18,fontWeight:700,marginBottom:6,marginTop:0}}>Teacher Admin Panel</h2>
+      <p style={{color:"#8899bb",fontSize:13,marginBottom:20}}>Enter your admin password to continue.</p>
+      <div style={{height:1,background:`linear-gradient(90deg,transparent,${C.gold}66,transparent)`,marginBottom:24}}/>
+      <DarkField icon={<Ico.Key/>} label="Admin Password" type="password" placeholder="••••••••" value={pw} set={setPw} onEnter={handleSubmit}/>
+      {error && <div style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.3)",
+        color:"#fca5a5",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:14}}>{error}</div>}
+      <Btn onClick={handleSubmit} variant="gold" size="lg" style={{width:"100%",justifyContent:"center"}}>
+        Enter Admin Panel →
+      </Btn>
+      <p style={{textAlign:"center",marginTop:14,fontSize:11,color:"#445"}}>Default password: <code style={{color:C.gold}}>teacher2026</code></p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ADMIN PANEL
+// ─────────────────────────────────────────────────────────
+function AdminPanel({ students, updateStudents, onLogout, showToast }) {
+  const [view, setView]       = useState("list");   // list | detail
+  const [selected, setSelected] = useState(null);
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [search, setSearch]   = useState("");
+
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.studentNo.toLowerCase().includes(search.toLowerCase()) ||
+    s.subjectCode.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function addStudent(data) {
+    const ns = [...students, {...data, id:uid(), scores:[], attendance:[]}];
+    updateStudents(ns);
+    setShowAddStudent(false);
+    showToast("Student added successfully!");
+  }
+
+  function deleteStudent(id) {
+    if (!window.confirm("Delete this student and all their records?")) return;
+    updateStudents(students.filter(s=>s.id!==id));
+    if (selected?.id===id) { setSelected(null); setView("list"); }
+    showToast("Student deleted.","error");
+  }
+
+  function updateStudent(updated) {
+    updateStudents(students.map(s=>s.id===updated.id?updated:s));
+    setSelected(updated);
+    showToast("Changes saved!");
+  }
+
+  if (view==="detail" && selected) {
+    const fresh = students.find(s=>s.id===selected.id)||selected;
+    return <StudentDetail student={fresh} onBack={()=>{setView("list");setSelected(null);}}
+      onUpdate={updateStudent} showToast={showToast}/>;
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:C.greyLight,fontFamily:"'Georgia',serif"}}>
+      {/* Nav */}
+      <nav style={{background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+        borderBottom:`2px solid ${C.gold}`,padding:"0 28px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",height:62,
+        boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:22}}>📋</span>
+          <span style={{color:C.gold,fontWeight:700,fontSize:17}}>Teacher Admin Panel</span>
+        </div>
+        <Btn onClick={onLogout} variant="ghost" size="sm"><Ico.Logout/> Sign Out</Btn>
+      </nav>
+
+      <div style={{maxWidth:960,margin:"0 auto",padding:"28px 20px"}}>
+        {/* Stats */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:14,marginBottom:26}}>
+          <StatCard value={students.length}     label="Total Students" color={C.blue}/>
+          <StatCard value={[...new Set(students.map(s=>s.subjectCode))].length} label="Subjects" color={C.gold}/>
+          <StatCard value={students.reduce((a,s)=>a+s.scores.length,0)}     label="Score Records" color={C.pink}/>
+          <StatCard value={students.reduce((a,s)=>a+s.attendance.length,0)} label="Attendance Records" color="#10b981"/>
+        </div>
+
+        {/* Toolbar */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:200,position:"relative"}}>
+            <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#aaa",fontSize:14}}>🔍</span>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, student no., subject…"
+              style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:8,border:"1px solid #e2d9f3",
+                fontFamily:"'Georgia',serif",fontSize:13,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
+          </div>
+          <Btn onClick={()=>setShowAddStudent(true)}><Ico.Plus/> Add Student</Btn>
+        </div>
+
+        {/* Student list */}
+        <div style={{background:"#fff",borderRadius:14,border:"1px solid #ede5f8",overflow:"hidden",
+          boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
+          {/* Table header */}
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr 1fr 1fr auto",
+            padding:"12px 20px",background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+            borderBottom:`2px solid ${C.gold}`,gap:8}}>
+            {["Student Name","Student No.","Subject","Scores","Attendance","Actions"].map(h=>(
+              <span key={h} style={{color:C.gold,fontSize:11,fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase"}}>{h}</span>
+            ))}
+          </div>
+
+          {filtered.length===0 && (
+            <div style={{padding:40,textAlign:"center",color:"#aaa",fontSize:14}}>
+              {search?"No students match your search.":"No students yet. Click 'Add Student' to get started."}
+            </div>
+          )}
+
+          {filtered.map((s,i)=>(
+            <div key={s.id} style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr 1fr 1fr auto",
+              padding:"14px 20px",gap:8,alignItems:"center",
+              borderBottom:i<filtered.length-1?"1px solid #f3edfb":"none",
+              background:i%2===0?"#fff":"#faf7fe",transition:"background 0.15s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#f0e9fa"}
+              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"#fff":"#faf7fe"}>
+              <div>
+                <div style={{fontWeight:600,color:C.dark,fontSize:14}}>{s.name}</div>
+                <div style={{color:"#999",fontSize:12,marginTop:2}}>{s.email}</div>
+              </div>
+              <span style={{color:"#5a6ea0",fontSize:13}}>{s.studentNo}</span>
+              <span style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,
+                background:C.blueLight,color:"#1a56b0",border:"1px solid #93b4f5",width:"fit-content"}}>
+                {s.subjectCode}
+              </span>
+              <span style={{color:"#666",fontSize:13}}>{s.scores.length} entries</span>
+              <span style={{color:"#666",fontSize:13}}>{s.attendance.length} sessions</span>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{setSelected(s);setView("detail");}}
+                  style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.blue}`,
+                    background:C.blueLight,color:"#1a56b0",cursor:"pointer",fontSize:12,
+                    fontFamily:"'Georgia',serif",display:"flex",alignItems:"center",gap:4}}>
+                  <Ico.Edit/> Edit
+                </button>
+                <button onClick={()=>deleteStudent(s.id)}
+                  style={{padding:"6px 10px",borderRadius:6,border:"1px solid #fca5a5",
+                    background:"#fee2e2",color:"#991b1b",cursor:"pointer",fontSize:12,
+                    fontFamily:"'Georgia',serif",display:"flex",alignItems:"center",gap:4}}>
+                  <Ico.Trash/>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add student modal */}
+      {showAddStudent && <AddStudentModal onSave={addStudent} onClose={()=>setShowAddStudent(false)}/>}
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box}`}</style>
+    </div>
+  );
+}
+
+function StatCard({ value, label, color }) {
+  return (
+    <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",
+      border:`1px solid ${color}33`,boxShadow:"0 2px 8px rgba(0,0,0,0.04)",textAlign:"center"}}>
+      <div style={{fontSize:30,fontWeight:700,color}}>{value}</div>
+      <div style={{fontSize:12,color:"#888",marginTop:4,letterSpacing:"0.06em"}}>{label}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ADD STUDENT MODAL
+// ─────────────────────────────────────────────────────────
+function AddStudentModal({ onSave, onClose }) {
+  const [f, setF] = useState({ name:"", email:"", studentNo:"", subjectCode:"", subject:"" });
+  const set = k => v => setF(p=>({...p,[k]:v}));
+  const valid = f.name && f.email && f.studentNo && f.subjectCode && f.subject;
+
+  return (
+    <Modal title="➕ Add New Student" onClose={onClose}>
+      <Input label="Full Name"     value={f.name}        onChange={set("name")}        placeholder="e.g. Ana Maria Cruz"                required/>
+      <Input label="School Email"  value={f.email}       onChange={set("email")}       placeholder="student@college.edu" type="email"   required/>
+      <Input label="Student No."   value={f.studentNo}   onChange={set("studentNo")}   placeholder="e.g. 2024-0003"                     required/>
+      <Input label="Subject Code"  value={f.subjectCode} onChange={set("subjectCode")} placeholder="e.g. ENG101"                        required/>
+      <Input label="Subject Name"  value={f.subject}     onChange={set("subject")}     placeholder="e.g. English 101 – Academic Writing" required/>
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+        <Btn variant="outline" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={()=>valid&&onSave(f)} disabled={!valid}>Save Student</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// STUDENT DETAIL (edit scores + attendance)
+// ─────────────────────────────────────────────────────────
+function StudentDetail({ student, onBack, onUpdate, showToast }) {
+  const [tab, setTab]       = useState("scores");
+  const [showAddScore, setShowAddScore]   = useState(false);
+  const [showAddAtt, setShowAddAtt]       = useState(false);
+  const [editScore, setEditScore]         = useState(null);
+  const [editAtt, setEditAtt]             = useState(null);
+
+  function deleteScore(id) {
+    onUpdate({...student, scores: student.scores.filter(s=>s.id!==id)});
+    showToast("Score deleted.");
+  }
+  function saveScore(entry) {
+    const exists = student.scores.find(s=>s.id===entry.id);
+    const scores = exists
+      ? student.scores.map(s=>s.id===entry.id?entry:s)
+      : [...student.scores, {...entry, id:uid()}];
+    onUpdate({...student, scores});
+    setShowAddScore(false); setEditScore(null);
+    showToast(exists?"Score updated!":"Score added!");
+  }
+  function deleteAtt(id) {
+    onUpdate({...student, attendance: student.attendance.filter(a=>a.id!==id)});
+    showToast("Attendance record deleted.");
+  }
+  function saveAtt(entry) {
+    const exists = student.attendance.find(a=>a.id===entry.id);
+    const attendance = exists
+      ? student.attendance.map(a=>a.id===entry.id?entry:a)
+      : [...student.attendance, {...entry, id:uid()}];
+    onUpdate({...student, attendance});
+    setShowAddAtt(false); setEditAtt(null);
+    showToast(exists?"Attendance updated!":"Attendance added!");
+  }
+
+  const present = student.attendance.filter(a=>a.status==="present").length;
+  const late    = student.attendance.filter(a=>a.status==="late").length;
+  const absent  = student.attendance.filter(a=>a.status==="absent").length;
+  const excused = student.attendance.filter(a=>a.status==="excused").length;
+  const total   = student.attendance.length;
+  const attPct  = total ? Math.round(((present+late+excused)/total)*100) : 0;
+
+  return (
+    <div style={{minHeight:"100vh",background:C.greyLight,fontFamily:"'Georgia',serif"}}>
+      <nav style={{background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+        borderBottom:`2px solid ${C.gold}`,padding:"0 28px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",height:62,
+        boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <button onClick={onBack} style={{background:"none",border:"none",color:"#999",
+            cursor:"pointer",fontSize:20,lineHeight:1,padding:0}}>←</button>
+          <span style={{color:"#fff",fontWeight:700,fontSize:16}}>{student.name}</span>
+          <span style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,
+            background:`${C.gold}33`,color:C.gold,border:`1px solid ${C.gold}44`}}>{student.subjectCode}</span>
+        </div>
+        <div style={{color:"#8899bb",fontSize:13}}>{student.email} · {student.studentNo}</div>
+      </nav>
+
+      <div style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
+        {/* Mini stats */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:24}}>
+          <StatCard value={avg(student.scores)+"%"} label="Avg Score"      color={C.pink}/>
+          <StatCard value={student.scores.length}   label="Assessments"    color={C.blue}/>
+          <StatCard value={`${attPct}%`}            label="Attendance Rate" color={C.gold}/>
+          <StatCard value={absent}                  label="Absences"        color={absent>3?"#ef4444":"#10b981"}/>
+          <StatCard value={excused}                 label="Excused"         color="#5b21b6"/>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",gap:8,marginBottom:20,background:"rgba(255,255,255,0.7)",
+          borderRadius:12,padding:5,border:"1px solid #e2d9f3",width:"fit-content"}}>
+          <TabBtn2 active={tab==="scores"}     onClick={()=>setTab("scores")}     icon={<Ico.Score/>} label="Scores"/>
+          <TabBtn2 active={tab==="attendance"} onClick={()=>setTab("attendance")} icon={<Ico.Cal/>}   label="Attendance"/>
+        </div>
+
+        {tab==="scores" && (
+          <div>
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+              <Btn onClick={()=>setShowAddScore(true)}><Ico.Plus/> Add Score</Btn>
+            </div>
+            {student.scores.length===0
+              ? <EmptyState msg="No scores yet. Click 'Add Score' to add the first entry."/>
+              : <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {student.scores.map(s=>{
+                    const pct=((s.score/s.total)*100).toFixed(1);
+                    const tc=typeColors[s.type]||typeColors.activity;
+                    return (
+                      <div key={s.id} style={{background:"#fff",borderRadius:12,padding:"14px 20px",
+                        border:"1px solid #ede5f8",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",
+                        boxShadow:"0 2px 6px rgba(0,0,0,0.04)"}}>
+                        <span style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,
+                          background:tc.bg,color:tc.text,border:`1px solid ${tc.border}`,flexShrink:0}}>
+                          {s.type.toUpperCase()}
+                        </span>
+                        <div style={{flex:1,minWidth:120}}>
+                          <div style={{fontWeight:600,color:C.dark,fontSize:14}}>{s.assessment}</div>
+                          <div style={{color:"#aaa",fontSize:12}}>{s.date}</div>
+                        </div>
+                        <div style={{fontWeight:700,fontSize:17,color:pct>=75?"#065f46":pct>=60?"#92400e":"#991b1b"}}>
+                          {s.score}<span style={{fontSize:12,color:"#bbb",fontWeight:400}}> / {s.total}</span>
+                          <span style={{fontSize:12,color:"#888",marginLeft:6}}>({pct}%)</span>
+                        </div>
+                        <div style={{display:"flex",gap:6}}>
+                          <button onClick={()=>setEditScore(s)}
+                            style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.blue}`,
+                              background:C.blueLight,color:"#1a56b0",cursor:"pointer",
+                              fontFamily:"'Georgia',serif",fontSize:12,display:"flex",alignItems:"center",gap:4}}>
+                            <Ico.Edit/>
+                          </button>
+                          <button onClick={()=>deleteScore(s.id)}
+                            style={{padding:"5px 10px",borderRadius:6,border:"1px solid #fca5a5",
+                              background:"#fee2e2",color:"#991b1b",cursor:"pointer",
+                              fontFamily:"'Georgia',serif",fontSize:12,display:"flex",alignItems:"center",gap:4}}>
+                            <Ico.Trash/>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+            }
+          </div>
+        )}
+
+        {tab==="attendance" && (
+          <div>
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+              <Btn onClick={()=>setShowAddAtt(true)}><Ico.Plus/> Add Session</Btn>
+            </div>
+            {student.attendance.length===0
+              ? <EmptyState msg="No attendance records yet."/>
+              : <div style={{background:"#fff",borderRadius:14,border:"1px solid #ede5f8",overflow:"hidden",
+                  boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",
+                    padding:"11px 20px",background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+                    borderBottom:`2px solid ${C.gold}`}}>
+                    {["Date","Day","Status",""].map((h,i)=>(
+                      <span key={i} style={{color:C.gold,fontSize:11,fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase"}}>{h}</span>
+                    ))}
+                  </div>
+                  {student.attendance.map((a,i)=>{
+                    const ss=statusStyles[a.status];
+                    return (
+                      <div key={a.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",
+                        padding:"12px 20px",gap:8,alignItems:"center",
+                        borderBottom:i<student.attendance.length-1?"1px solid #f3edfb":"none",
+                        background:i%2===0?"#fff":"#faf7fe"}}>
+                        <span style={{fontSize:14,color:C.dark}}>{a.date}</span>
+                        <span style={{fontSize:14,color:"#7a6ea0"}}>{a.day}</span>
+                        <span style={{padding:"3px 12px",borderRadius:20,fontSize:12,fontWeight:600,
+                          background:ss.bg,color:ss.text,width:"fit-content",
+                          display:"flex",alignItems:"center",gap:5}}>
+                          <span style={{width:6,height:6,borderRadius:"50%",background:ss.text,display:"inline-block"}}/>
+                          {ss.label}
+                        </span>
+                        <div style={{display:"flex",gap:6}}>
+                          <button onClick={()=>setEditAtt(a)}
+                            style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.blue}`,
+                              background:C.blueLight,color:"#1a56b0",cursor:"pointer",
+                              fontFamily:"'Georgia',serif",fontSize:12,display:"flex",alignItems:"center"}}>
+                            <Ico.Edit/>
+                          </button>
+                          <button onClick={()=>deleteAtt(a.id)}
+                            style={{padding:"5px 10px",borderRadius:6,border:"1px solid #fca5a5",
+                              background:"#fee2e2",color:"#991b1b",cursor:"pointer",
+                              fontFamily:"'Georgia',serif",fontSize:12,display:"flex",alignItems:"center"}}>
+                            <Ico.Trash/>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+            }
+          </div>
+        )}
+      </div>
+
+      {(showAddScore||editScore) &&
+        <ScoreModal entry={editScore} onSave={saveScore} onClose={()=>{setShowAddScore(false);setEditScore(null)}}/>}
+      {(showAddAtt||editAtt) &&
+        <AttModal entry={editAtt} onSave={saveAtt} onClose={()=>{setShowAddAtt(false);setEditAtt(null)}}/>}
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box}`}</style>
+    </div>
+  );
+}
+
+function TabBtn2({ active, onClick, icon, label }) {
+  return (
+    <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:7,
+      padding:"9px 18px",borderRadius:9,border:"none",cursor:"pointer",
+      background:active?`linear-gradient(135deg,${C.pink},#c2185b)`:"transparent",
+      color:active?"#fff":"#7a6ea0",fontFamily:"'Georgia',serif",fontSize:13,fontWeight:active?600:400,
+      boxShadow:active?`0 4px 12px ${C.pink}33`:"none",transition:"all 0.18s"}}>
+      {icon} {label}
+    </button>
+  );
+}
+
+function EmptyState({ msg }) {
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:"1px dashed #e2d9f3",
+      padding:40,textAlign:"center",color:"#bbb",fontSize:14}}>{msg}</div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// SCORE MODAL
+// ─────────────────────────────────────────────────────────
+function ScoreModal({ entry, onSave, onClose }) {
+  const [f, setF] = useState(entry || { assessment:"", date:"", score:"", total:"", type:"quiz" });
+  const set = k => v => setF(p=>({...p,[k]:v}));
+  const valid = f.assessment && f.date && f.score!=="" && f.total!=="";
+
+  return (
+    <Modal title={entry?"✏️ Edit Score":"➕ Add Score"} onClose={onClose}>
+      <Input label="Assessment Name" value={f.assessment} onChange={set("assessment")} placeholder="e.g. Quiz 1" required/>
+      <Input label="Date" value={f.date} onChange={set("date")} placeholder="e.g. Mar 10, 2026" required/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <Input label="Score" value={f.score} onChange={set("score")} type="number" placeholder="e.g. 85" required/>
+        <Input label="Total Points" value={f.total} onChange={set("total")} type="number" placeholder="e.g. 100" required/>
+      </div>
+      <Select label="Type" value={f.type} onChange={set("type")}
+        options={[{value:"quiz",label:"Quiz"},{value:"exam",label:"Exam"},{value:"activity",label:"Activity"}]}/>
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+        <Btn variant="outline" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={()=>valid&&onSave({...f,score:Number(f.score),total:Number(f.total)})} disabled={!valid}>
+          {entry?"Update Score":"Add Score"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ATTENDANCE MODAL
+// ─────────────────────────────────────────────────────────
+function AttModal({ entry, onSave, onClose }) {
+  const [f, setF] = useState(entry || { date:"", day:"Monday", status:"present" });
+  const set = k => v => setF(p=>({...p,[k]:v}));
+  const valid = f.date && f.day && f.status;
+
+  return (
+    <Modal title={entry?"✏️ Edit Attendance":"➕ Add Attendance Session"} onClose={onClose}>
+      <Input label="Date" value={f.date} onChange={set("date")} placeholder="e.g. Mar 10, 2026" required/>
+      <Select label="Day" value={f.day} onChange={set("day")}
+        options={DAYS.map(d=>({value:d,label:d}))}/>
+      <Select label="Status" value={f.status} onChange={set("status")}
+        options={[
+          {value:"present",label:"✅ Present"},
+          {value:"late",   label:"⏰ Late"},
+          {value:"absent", label:"❌ Absent"},
+          {value:"excused",label:"📋 Excused"},
+        ]}/>
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+        <Btn variant="outline" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={()=>valid&&onSave(f)} disabled={!valid}>
+          {entry?"Update":"Add Session"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// STUDENT DASHBOARD (unchanged from v1, refreshed)
+// ─────────────────────────────────────────────────────────
+function StudentDashboard({ student, onLogout }) {
+  const [tab, setTab] = useState("scores");
+  const present = student.attendance.filter(a=>a.status==="present").length;
+  const late    = student.attendance.filter(a=>a.status==="late").length;
+  const absent  = student.attendance.filter(a=>a.status==="absent").length;
+  const excused = student.attendance.filter(a=>a.status==="excused").length;
+  const total   = student.attendance.length;
+  const attPct  = total ? Math.round(((present+late+excused)/total)*100) : 0;
+  const avgScore = avg(student.scores);
+
+  return (
+    <div style={{minHeight:"100vh",background:C.greyLight,fontFamily:"'Georgia',serif"}}>
+      <nav style={{background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+        borderBottom:`2px solid ${C.gold}`,padding:"0 28px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",height:62,
+        boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:22}}>🎓</span>
+          <span style={{color:C.gold,fontWeight:700,fontSize:17}}>Student Portal</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <span style={{color:"#9ea8c0",fontSize:13}}>Welcome, <strong style={{color:"#e8d49a"}}>{student.name.split(" ")[0]}</strong></span>
+          <Btn onClick={onLogout} variant="ghost" size="sm"><Ico.Logout/> Sign Out</Btn>
+        </div>
+      </nav>
+
+      <div style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
+        {/* Banner */}
+        <div style={{background:`linear-gradient(135deg,${C.dark},${C.mid})`,borderRadius:14,
+          padding:"22px 26px",marginBottom:24,border:`1px solid ${C.gold}44`,
+          display:"flex",flexWrap:"wrap",alignItems:"center",gap:18,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.2)",animation:"slideUp 0.4s ease"}}>
+          <div style={{width:52,height:52,borderRadius:"50%",
+            background:`linear-gradient(135deg,${C.pink},${C.blue})`,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:20,flexShrink:0,boxShadow:`0 4px 14px ${C.pink}44`}}>
+            {student.name.charAt(0)}
+          </div>
+          <div style={{flex:1,minWidth:180}}>
+            <div style={{color:"#fff",fontSize:19,fontWeight:700,marginBottom:3}}>{student.name}</div>
+            <div style={{color:"#9ea8c0",fontSize:13}}>{student.subject}</div>
+          </div>
+          <SumPill label="Avg Score"   value={`${avgScore}%`}   color={C.pink}/>
+          <SumPill label="Attendance"  value={`${attPct}%`}     color={C.blue}/>
+          <SumPill label="Absences"    value={absent}            color={absent>3?"#ef4444":C.gold}/>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",gap:8,marginBottom:20,background:"rgba(255,255,255,0.7)",
+          borderRadius:12,padding:5,border:"1px solid #e2d9f3",width:"fit-content"}}>
+          <TabBtn2 active={tab==="scores"}     onClick={()=>setTab("scores")}     icon={<Ico.Score/>} label="Scores & Grades"/>
+          <TabBtn2 active={tab==="attendance"} onClick={()=>setTab("attendance")} icon={<Ico.Cal/>}   label="Attendance Record"/>
+        </div>
+
+        {tab==="scores" && <ScoresView scores={student.scores}/>}
+        {tab==="attendance" && <AttView attendance={student.attendance}
+          present={present} late={late} absent={absent} excused={excused} total={total}/>}
+      </div>
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}*{box-sizing:border-box}`}</style>
+    </div>
+  );
+}
+
+function SumPill({ label, value, color }) {
+  return (
+    <div style={{textAlign:"center",background:"rgba(255,255,255,0.06)",
+      border:`1px solid ${color}44`,borderRadius:10,padding:"11px 18px",minWidth:84}}>
+      <div style={{color,fontSize:21,fontWeight:700,lineHeight:1}}>{value}</div>
+      <div style={{color:"#9ea8c0",fontSize:11,marginTop:3,letterSpacing:"0.07em"}}>{label}</div>
+    </div>
+  );
+}
+
+function ScoresView({ scores }) {
+  const totalEarned = scores.reduce((a,s)=>a+s.score,0);
+  const totalMax    = scores.reduce((a,s)=>a+s.total,0);
+  const overallPct  = totalMax?((totalEarned/totalMax)*100).toFixed(1):0;
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <div style={{background:"#fff",borderRadius:14,padding:"20px 24px",marginBottom:16,
+        border:"1px solid #ede5f8",boxShadow:"0 2px 10px rgba(201,168,76,0.08)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <span style={{fontSize:12,fontWeight:600,color:"#7a6ea0",letterSpacing:"0.08em"}}>OVERALL AVERAGE</span>
+          <span style={{fontSize:22,fontWeight:700,color:C.pink}}>{overallPct}%</span>
+        </div>
+        <div style={{height:9,background:"#f0e6fa",borderRadius:5,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${overallPct}%`,
+            background:`linear-gradient(90deg,${C.pink},${C.blue})`,borderRadius:5}}/>
+        </div>
+        <div style={{textAlign:"right",marginTop:5,fontSize:12,color:"#aaa"}}>{totalEarned} / {totalMax} pts</div>
+      </div>
+      {scores.length===0
+        ? <EmptyState msg="No score records available yet."/>
+        : <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {scores.map((s,i)=>{
+              const pct=((s.score/s.total)*100).toFixed(1);
+              const tc=typeColors[s.type]||typeColors.activity;
+              return (
+                <div key={s.id||i} style={{background:"#fff",borderRadius:12,padding:"14px 20px",
+                  border:"1px solid #ede5f8",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",
+                  boxShadow:"0 2px 6px rgba(0,0,0,0.04)",transition:"transform 0.15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.transform="translateX(4px)"}
+                  onMouseLeave={e=>e.currentTarget.style.transform="translateX(0)"}>
+                  <span style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,
+                    background:tc.bg,color:tc.text,border:`1px solid ${tc.border}`,flexShrink:0}}>
+                    {s.type.toUpperCase()}
+                  </span>
+                  <div style={{flex:1,minWidth:120}}>
+                    <div style={{fontWeight:600,color:C.dark,fontSize:14}}>{s.assessment}</div>
+                    <div style={{color:"#aaa",fontSize:12}}>{s.date}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:17,fontWeight:700,color:pct>=75?"#065f46":pct>=60?"#92400e":"#991b1b"}}>
+                      {s.score}<span style={{fontSize:12,color:"#bbb",fontWeight:400}}> / {s.total}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"#888"}}>{pct}%</div>
+                  </div>
+                  <div style={{width:"100%",height:4,background:"#f0e6fa",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${pct}%`,borderRadius:2,
+                      background:pct>=75?"linear-gradient(90deg,#10b981,#059669)":pct>=60?"linear-gradient(90deg,#f59e0b,#d97706)":"linear-gradient(90deg,#ef4444,#dc2626)"}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+      }
+    </div>
+  );
+}
+
+function AttView({ attendance, present, late, absent, excused=0, total }) {
+  const pct = total?Math.round(((present+late+excused)/total)*100):0;
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20}}>
+        <StatCard value={total}   label="Total Classes"  color={C.blue}/>
+        <StatCard value={present} label="Present"        color="#065f46"/>
+        <StatCard value={late}    label="Late"           color="#92400e"/>
+        <StatCard value={absent}  label="Absent"         color={absent>3?"#ef4444":"#991b1b"}/>
+        <StatCard value={excused} label="Excused"        color="#5b21b6"/>
+        <StatCard value={`${pct}%`} label="Attendance Rate" color={C.gold}/>
+      </div>
+      {absent>3 && (
+        <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,
+          padding:"11px 16px",marginBottom:16,color:"#991b1b",fontSize:13}}>
+          ⚠️ You have <strong>{absent} absences</strong>. Please be mindful of your attendance standing.
+        </div>
+      )}
+      {attendance.length===0
+        ? <EmptyState msg="No attendance records available yet."/>
+        : <div style={{background:"#fff",borderRadius:14,border:"1px solid #ede5f8",overflow:"hidden",
+            boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",
+              padding:"11px 20px",background:`linear-gradient(135deg,${C.dark},${C.navy})`,
+              borderBottom:`2px solid ${C.gold}`}}>
+              {["Date","Day","Status"].map(h=>(
+                <span key={h} style={{color:C.gold,fontSize:11,fontWeight:600,letterSpacing:"0.13em",textTransform:"uppercase"}}>{h}</span>
+              ))}
+            </div>
+            {attendance.map((a,i)=>{
+              const ss=statusStyles[a.status];
+              return (
+                <div key={a.id||i} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",
+                  padding:"12px 20px",borderBottom:i<attendance.length-1?"1px solid #f3edfb":"none",
+                  background:i%2===0?"#fff":"#faf7fe",transition:"background 0.15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="#f0e9fa"}
+                  onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"#fff":"#faf7fe"}>
+                  <span style={{fontSize:14,color:C.dark}}>{a.date}</span>
+                  <span style={{fontSize:14,color:"#7a6ea0"}}>{a.day}</span>
+                  <span style={{padding:"3px 12px",borderRadius:20,fontSize:12,fontWeight:600,
+                    background:ss.bg,color:ss.text,width:"fit-content",
+                    display:"inline-flex",alignItems:"center",gap:5}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:ss.text,display:"inline-block"}}/>
+                    {ss.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+      }
+    </div>
+  );
+}
